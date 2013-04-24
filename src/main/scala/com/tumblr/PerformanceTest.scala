@@ -50,15 +50,22 @@ trait PerformanceTestMain {
 
   def createNestedDirectory(destRoot: File, threadCount: Int): File = {
     val dest = new File(destRoot, "threads-" + threadCount)
-    if (dest.mkdir())
+    if (dest.exists()) {
+      dest.listFiles().foreach(_.delete())
+      dest.delete()
+    }
+    
+    if (dest.mkdir()) {
+      dest.deleteOnExit()
       dest
+    }
     else
       throw new Exception("Failed to create directory")
   }
   
   private def printMemoryStatistics() {
     val runtime = Runtime.getRuntime()
-    printf("Total Memory %l, Free Memory %l, Max memory %l", runtime.totalMemory(), runtime.freeMemory(), runtime.maxMemory() )
+    printf("Total Memory %d, Free Memory %d, Max memory %d%n", runtime.totalMemory(), runtime.freeMemory(), runtime.maxMemory() )
   }
 
   def benchmark(reporter: BenchmarkReportingBase, root: File, destRoot: File) {
@@ -69,34 +76,34 @@ trait PerformanceTestMain {
     val countOfFiles = files.size
 
     def invokeBenchmarkAction(dest: File) {
-      val startTime = System.currentTimeMillis()
+      //val startTime = System.currentTimeMillis()
       val access = index.incrementAndGet() - 1
       if (access < files.size) {
         val file = files(access)
         doAction(dest, file)
       }
-      val endTime = System.currentTimeMillis()
-      if (endTime - startTime > 8000) { 
+      //val endTime = System.currentTimeMillis()
+      //if (endTime - startTime > 8000) { 
         // exceed 8 second for an image
-        System.gc()
-        printMemoryStatistics()
-        Runtime.getRuntime().halt(-1)
-      }
+      //  System.gc()
+      //  printMemoryStatistics()
+      //  Runtime.getRuntime().halt(-1)
+      //}
 
       if (access % 10 == 0) {
-	      System.gc()
-	      printMemoryStatistics()
+        System.gc()
+        printMemoryStatistics()
       }
     }
 
-    val threadCounts = Seq(4, 8)
+    val threadCounts = Seq(2,4,8)
     val benchmark = Benchpress("conc-" + testName, reporter)
 
     for (threadCount <- threadCounts) {
       index.set(0)
       val destDir = createNestedDirectory(destRoot, threadCount)
       benchmark
-        .forceGC
+        //.forceGC
         .iterations(countOfFiles)
         .concurrent(threadCount)
         .aggregateTiming
