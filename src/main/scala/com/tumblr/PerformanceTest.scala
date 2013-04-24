@@ -55,6 +55,11 @@ trait PerformanceTestMain {
     else
       throw new Exception("Failed to create directory")
   }
+  
+  private def printMemoryStatistics() {
+    val runtime = Runtime.getRuntime()
+    printf("Total Memory %l, Free Memory %l, Max memory %l", runtime.totalMemory(), runtime.freeMemory(), runtime.maxMemory() )
+  }
 
   def benchmark(reporter: BenchmarkReportingBase, root: File, destRoot: File) {
     val files = root listFiles ImageFilter
@@ -63,11 +68,24 @@ trait PerformanceTestMain {
     val index = new AtomicInteger
     val countOfFiles = files.size
 
-    def qualityAdjustment(dest: File) {
+    def invokeBenchmarkAction(dest: File) {
+      val startTime = System.currentTimeMillis()
       val access = index.incrementAndGet() - 1
       if (access < files.size) {
         val file = files(access)
         doAction(dest, file)
+      }
+      val endTime = System.currentTimeMillis()
+      if (endTime - startTime > 8000) { 
+        // exceed 8 second for an image
+        System.gc()
+        printMemoryStatistics()
+        Runtime.getRuntime().halt(-1)
+      }
+
+      if (access % 10 == 0) {
+	      System.gc()
+	      printMemoryStatistics()
       }
     }
 
@@ -78,10 +96,11 @@ trait PerformanceTestMain {
       index.set(0)
       val destDir = createNestedDirectory(destRoot, threadCount)
       benchmark
+        .forceGC
         .iterations(countOfFiles)
         .concurrent(threadCount)
         .aggregateTiming
-        .bench(qualityAdjustment(destDir))
+        .bench(invokeBenchmarkAction(destDir))
     }
   }
 
