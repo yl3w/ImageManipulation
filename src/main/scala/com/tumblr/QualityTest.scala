@@ -21,7 +21,7 @@ object QualityTest extends PerformanceTestMain {
   override def doAction(dest: File, file: File) {
     val info = new ImageInfo(file.getAbsolutePath())
     val image = new MagickImage(info)
-    info.setQuality(80)
+    image.setQuality(80)
     val destFile = new File(dest, file.getName())
     image.setFileName(destFile.getAbsolutePath())
     image.writeImage(info)

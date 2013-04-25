@@ -6,3 +6,6 @@ target/
 bin/
 Pictures/
 pictures/
+QT/
+RT/
+*.tar.gz
