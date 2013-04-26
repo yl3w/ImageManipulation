@@ -53,8 +53,13 @@ object SimplePerformanceTest {
 
   def createNestedDirectory(destRoot: File, threadCount: Int): File = {
     val dest = new File(destRoot, "threads-" + threadCount)
-    if (dest.mkdir())
+    if (dest.exists()) {
+      dest.delete()
+    }
+    if (dest.mkdir()) {
+      dest.deleteOnExit()
       dest
+    }
     else
       throw new Exception("Failed to create directory")
   }
